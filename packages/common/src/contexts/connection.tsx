@@ -1,12 +1,23 @@
 import { KnownToken, useLocalStorageState } from '../utils/utils';
-import { Account, clusterApiUrl, Connection, Transaction, TransactionInstruction } from '@solana/web3.js';
+import {
+  Account,
+  clusterApiUrl,
+  Connection,
+  Transaction,
+  TransactionInstruction,
+} from '@solana/web3.js';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { notify } from '../utils/notifications';
 import { ExplorerLink } from '../components/ExplorerLink';
 import LocalTokens from '../config/tokens.json';
 import { setProgramIds } from '../utils/ids';
 
-export type ENV = 'mainnet-beta' | 'testnet' | 'devnet' | 'localnet' | 'lending';
+export type ENV =
+  | 'mainnet-beta'
+  | 'testnet'
+  | 'devnet'
+  | 'localnet'
+  | 'lending';
 
 export const ENDPOINTS = [
   {
@@ -54,25 +65,38 @@ const ConnectionContext = React.createContext<ConnectionConfig>({
 });
 
 export function ConnectionProvider({ children = undefined as any }) {
-  const [endpoint, setEndpoint] = useLocalStorageState('connectionEndpts', ENDPOINTS[0].endpoint);
+  const [endpoint, setEndpoint] = useLocalStorageState(
+    'connectionEndpts',
+    ENDPOINTS[0].endpoint,
+  );
 
-  const [slippage, setSlippage] = useLocalStorageState('slippage', DEFAULT_SLIPPAGE.toString());
+  const [slippage, setSlippage] = useLocalStorageState(
+    'slippage',
+    DEFAULT_SLIPPAGE.toString(),
+  );
 
-  const connection = useMemo(() => new Connection(endpoint, 'recent'), [endpoint]);
-  const sendConnection = useMemo(() => new Connection(endpoint, 'recent'), [endpoint]);
+  const connection = useMemo(() => new Connection(endpoint, 'recent'), [
+    endpoint,
+  ]);
+  const sendConnection = useMemo(() => new Connection(endpoint, 'recent'), [
+    endpoint,
+  ]);
 
-  const env = ENDPOINTS.find((end) => end.endpoint === endpoint)?.name || ENDPOINTS[0].name;
+  const env =
+    ENDPOINTS.find(end => end.endpoint === endpoint)?.name || ENDPOINTS[0].name;
 
   const [tokens, setTokens] = useState<KnownToken[]>([]);
   const [tokenMap, setTokenMap] = useState<Map<string, KnownToken>>(new Map());
   useEffect(() => {
     // fetch token files
     window
-      .fetch(`https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/${env}.json`)
-      .then((res) => {
+      .fetch(
+        `https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/${env}.json`,
+      )
+      .then(res => {
         return res.json();
       })
-      .catch((err) => [])
+      .catch(err => [])
       .then((list: KnownToken[]) => {
         const knownMints = [...LocalTokens, ...list].reduce((map, item) => {
           map.set(item.mintAddress, item);
@@ -104,7 +128,10 @@ export function ConnectionProvider({ children = undefined as any }) {
   }, [connection]);
 
   useEffect(() => {
-    const id = sendConnection.onAccountChange(new Account().publicKey, () => {});
+    const id = sendConnection.onAccountChange(
+      new Account().publicKey,
+      () => {},
+    );
     return () => {
       sendConnection.removeAccountChangeListener(id);
     };
@@ -123,7 +150,7 @@ export function ConnectionProvider({ children = undefined as any }) {
         endpoint,
         setEndpoint,
         slippage: parseFloat(slippage),
-        setSlippage: (val) => setSlippage(val.toString()),
+        setSlippage: val => setSlippage(val.toString()),
         connection,
         sendConnection,
         tokens,
@@ -168,7 +195,7 @@ const getErrorForTransaction = async (connection: Connection, txid: string) => {
 
   const errors: string[] = [];
   if (tx?.meta && tx.meta.logMessages) {
-    tx.meta.logMessages.forEach((log) => {
+    tx.meta.logMessages.forEach(log => {
       const regex = /Error: (.*)/gm;
       let m;
       while ((m = regex.exec(log)) !== null) {
@@ -192,15 +219,17 @@ export const sendTransaction = async (
   wallet: any,
   instructions: TransactionInstruction[],
   signers: Account[],
-  awaitConfirmation = true
+  awaitConfirmation = true,
 ) => {
   let transaction = new Transaction();
-  instructions.forEach((instruction) => transaction.add(instruction));
-  transaction.recentBlockhash = (await connection.getRecentBlockhash('max')).blockhash;
+  instructions.forEach(instruction => transaction.add(instruction));
+  transaction.recentBlockhash = (
+    await connection.getRecentBlockhash('max')
+  ).blockhash;
   transaction.setSigners(
     // fee payied by the wallet owner
     wallet.publicKey,
-    ...signers.map((s) => s.publicKey)
+    ...signers.map(s => s.publicKey),
   );
   if (signers.length > 0) {
     transaction.partialSign(...signers);
@@ -215,7 +244,12 @@ export const sendTransaction = async (
   const txid = await connection.sendRawTransaction(rawTransaction, options);
 
   if (awaitConfirmation) {
-    const status = (await connection.confirmTransaction(txid, options && (options.commitment as any))).value;
+    const status = (
+      await connection.confirmTransaction(
+        txid,
+        options && (options.commitment as any),
+      )
+    ).value;
 
     if (status?.err) {
       const errors = await getErrorForTransaction(connection, txid);
@@ -223,16 +257,18 @@ export const sendTransaction = async (
         message: 'Transaction failed...',
         description: (
           <>
-            {errors.map((err) => (
+            {errors.map(err => (
               <div>{err}</div>
             ))}
-            <ExplorerLink address={txid} type='transaction' />
+            <ExplorerLink address={txid} type="transaction" />
           </>
         ),
         type: 'error',
       });
 
-      throw new Error(`Raw transaction ${txid} failed (${JSON.stringify(status)})`);
+      throw new Error(
+        `Raw transaction ${txid} failed (${JSON.stringify(status)})`,
+      );
     }
   }
 
