@@ -7,7 +7,11 @@ import { LABELS } from '../../constants/labels';
 import { ConnectButton } from '..';
 import { useWallet } from '../../contexts/wallet';
 import './style.css';
-export const AppBar = (props: { left?: JSX.Element; right?: JSX.Element }) => {
+export const AppBar = (props: {
+  left?: JSX.Element;
+  right?: JSX.Element;
+  additionalSettings?: JSX.Element;
+}) => {
   const { connected, wallet } = useWallet();
 
   const TopBar = (
@@ -25,7 +29,7 @@ export const AppBar = (props: { left?: JSX.Element; right?: JSX.Element }) => {
       <Popover
         placement="topRight"
         title={LABELS.SETTINGS_TOOLTIP}
-        content={<Settings />}
+        content={<Settings additionalSettings={props.additionalSettings} />}
         trigger="click"
       >
         <Button
